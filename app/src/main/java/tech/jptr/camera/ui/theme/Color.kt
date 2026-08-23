@@ -1,0 +1,117 @@
+package tech.jptr.camera.ui.theme
+
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
+import androidx.compose.ui.graphics.Color
+
+private val DarkColorPalette = darkColorScheme(
+    primary = Color(0xFF8AB4F8),
+    onPrimary = Color(0xFF003366),
+    primaryContainer = Color(0xFF1A4A7A),
+    onPrimaryContainer = Color(0xFFD6E4F0),
+    secondary = Color(0xFFB0BEC5),
+    onSecondary = Color(0xFF333F45),
+    secondaryContainer = Color(0xFF474F55),
+    onSecondaryContainer = Color(0xFFD6DCE0),
+    tertiary = Color(0xFFBCC2DF),
+    onTertiary = Color(0xFF383D5E),
+    tertiaryContainer = Color(0xFF4E5374),
+    onTertiaryContainer = Color(0xFFD6D9E7),
+    error = Color(0xFFFFB4AB),
+    onError = Color(0xFF690005),
+    errorContainer = Color(0xFF93000A),
+    onErrorContainer = Color(0xFFFFDAD6),
+    background = Color(0xFF121212),
+    onBackground = Color(0xFFE6E6E6),
+    surface = Color(0xFF121212),
+    onSurface = Color(0xFFE6E6E6),
+    surfaceVariant = Color(0xFF44474E),
+    onSurfaceVariant = Color(0xFFC4C6CF),
+    outline = Color(0xFF8E9098),
+    outlineVariant = Color(0xFF44474E),
+    scrim = Color(0xFF000000),
+    inverseSurface = Color(0xFFE6E6E6),
+    inverseOnSurface = Color(0xFF121212),
+    inversePrimary = Color(0xFF4A84C4),
+    primaryFixed = Color(0xFFD6E4F0),
+    onPrimaryFixed = Color(0xFF001F3D),
+    primaryFixedDim = Color(0xFF8AB4F8),
+    onPrimaryFixedVariant = Color(0xFF335F8E),
+    secondaryFixed = Color(0xFFD6DCE0),
+    onSecondaryFixed = Color(0xFF1E282D),
+    secondaryFixedDim = Color(0xFFB0BEC5),
+    onSecondaryFixedVariant = Color(0xFF474F55),
+    tertiaryFixed = Color(0xFFD6D9E7),
+    onTertiaryFixed = Color(0xFF232848),
+    tertiaryFixedDim = Color(0xFFBCC2DF),
+    onTertiaryFixedVariant = Color(0xFF4E5374),
+    surfaceDim = Color(0xFF121212),
+    surfaceBright = Color(0xFF383838),
+    surfaceContainerLowest = Color(0xFF0D0D0D),
+    surfaceContainerLow = Color(0xFF1A1A1A),
+    surfaceContainer = Color(0xFF1E1E1E),
+    surfaceContainerHigh = Color(0xFF282828),
+    surfaceContainerHighest = Color(0xFF333333),
+)
+
+private val LightColorPalette = lightColorScheme(
+    primary = Color(0xFF4A84C4),
+    onPrimary = Color(0xFFFFFFFF),
+    primaryContainer = Color(0xFFD6E4F0),
+    onPrimaryContainer = Color(0xFF001F3D),
+    secondary = Color(0xFF474F55),
+    onSecondary = Color(0xFFFFFFFF),
+    secondaryContainer = Color(0xFFD6DCE0),
+    onSecondaryContainer = Color(0xFF1E282D),
+    tertiary = Color(0xFF4E5374),
+    onTertiary = Color(0xFFFFFFFF),
+    tertiaryContainer = Color(0xFFD6D9E7),
+    onTertiaryContainer = Color(0xFF232848),
+    error = Color(0xFFBA1A1A),
+    onError = Color(0xFFFFFFFF),
+    errorContainer = Color(0xFFFFDAD6),
+    onErrorContainer = Color(0xFF410002),
+    background = Color(0xFFFDFDFD),
+    onBackground = Color(0xFF1A1A1A),
+    surface = Color(0xFFFDFDFD),
+    onSurface = Color(0xFF1A1A1A),
+    surfaceVariant = Color(0xFFE0E3E9),
+    onSurfaceVariant = Color(0xFF44474E),
+    outline = Color(0xFF74777F),
+    outlineVariant = Color(0xFFC4C6CF),
+    scrim = Color(0xFF000000),
+    inverseSurface = Color(0xFF1A1A1A),
+    inverseOnSurface = Color(0xFFFDFDFD),
+    inversePrimary = Color(0xFF8AB4F8),
+    primaryFixed = Color(0xFFD6E4F0),
+    onPrimaryFixed = Color(0xFF001F3D),
+    primaryFixedDim = Color(0xFF8AB4F8),
+    onPrimaryFixedVariant = Color(0xFF335F8E),
+    secondaryFixed = Color(0xFFD6DCE0),
+    onSecondaryFixed = Color(0xFF1E282D),
+    secondaryFixedDim = Color(0xFFB0BEC5),
+    onSecondaryFixedVariant = Color(0xFF474F55),
+    tertiaryFixed = Color(0xFFD6D9E7),
+    onTertiaryFixed = Color(0xFF232848),
+    tertiaryFixedDim = Color(0xFFBCC2DF),
+    onTertiaryFixedVariant = Color(0xFF4E5374),
+    surfaceDim = Color(0xFFDEDEDE),
+    surfaceBright = Color(0xFFFDFDFD),
+    surfaceContainerLowest = Color(0xFFFFFFFF),
+    surfaceContainerLow = Color(0xFFF7F7F7),
+    surfaceContainer = Color(0xFFF1F1F1),
+    surfaceContainerHigh = Color(0xFFEBEBEB),
+    surfaceContainerHighest = Color(0xFFE5E5E5),
+)
+
+@androidx.compose.runtime.Composable
+internal fun AppColorScheme(
+    isDark: Boolean,
+    dynamicColor: androidx.compose.material3.ColorScheme?
+): androidx.compose.material3.ColorScheme {
+    return if (isDark) {
+        dynamicColor ?: DarkColorPalette
+    } else {
+        dynamicColor ?: LightColorPalette
+    }
+}

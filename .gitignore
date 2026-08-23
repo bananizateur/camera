@@ -1,0 +1,8 @@
+.DS_Store
+.gradle/
+.idea/
+app/build/
+build/
+java_pid20540.hprof
+java_pid20540.hprof
+local.properties
