@@ -160,7 +160,7 @@ fun CameraScreen(viewModel: CameraViewModel) {
                 val uri = photoSaver.getLastImageUri()
                 if (uri != null) {
                     context.startActivity(Intent(Intent.ACTION_VIEW).apply {
-                        setDataAndType(uri, "image/*")
+                        data = uri
                         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                     })
                 }
