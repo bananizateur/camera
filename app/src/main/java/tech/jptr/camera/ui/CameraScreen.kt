@@ -126,7 +126,11 @@ fun CameraScreen(viewModel: CameraViewModel) {
     val imageCapture = remember { UseCases.createImageCapture(targetRotation = 0) }
     val videoCapture = remember(facing) { UseCases.createVideoCapture(targetRotation = 0, context = context) }
 
-    val previewView = remember { PreviewView(context) }
+    val previewView = remember {
+        PreviewView(context).apply {
+            scaleType = PreviewView.ScaleType.FIT_CENTER
+        }
+    }
 
     LaunchedEffect(Unit) {
         preview.setSurfaceProvider(previewView.surfaceProvider)
@@ -197,6 +201,7 @@ fun CameraScreen(viewModel: CameraViewModel) {
 
     var activeRecording by remember { mutableStateOf<Recording?>(null) }
     var recordingStartTime by remember { mutableLongStateOf(0L) }
+    var isExpanded by remember { mutableStateOf(false) }
 
     LaunchedEffect(isRecording) {
         if (isRecording) {
@@ -222,14 +227,16 @@ fun CameraScreen(viewModel: CameraViewModel) {
             }
         }
         .pointerInput(Unit) {
-            detectTapGestures { offset ->
-                // Tap to focus
-                val factory: MeteringPointFactory = previewView.meteringPointFactory
-                val point = factory.createPoint(offset.x, offset.y)
-                val action = FocusMeteringAction.Builder(point).build()
-                viewModel.cameraControl?.startFocusAndMetering(action)
-                viewModel.onTapFocus(offset, 0)
-            }
+            detectTapGestures(
+                onDoubleTap = { viewModel.toggleCamera() },
+                onTap = { offset ->
+                    val factory: MeteringPointFactory = previewView.meteringPointFactory
+                    val point = factory.createPoint(offset.x, offset.y)
+                    val action = FocusMeteringAction.Builder(point).build()
+                    viewModel.cameraControl?.startFocusAndMetering(action)
+                    viewModel.onTapFocus(offset, 0)
+                }
+            )
         }
         .pointerInput(Unit) {
             detectTransformGestures { _, _, zoom, _ ->
@@ -263,6 +270,15 @@ fun CameraScreen(viewModel: CameraViewModel) {
 
         ControlsOverlay(
             viewModel = viewModel,
+            isExpanded = isExpanded,
+            onToggleExpand = {
+                isExpanded = !isExpanded
+                previewView.scaleType = if (isExpanded) {
+                    PreviewView.ScaleType.FILL_CENTER
+                } else {
+                    PreviewView.ScaleType.FIT_CENTER
+                }
+            },
             onCaptureClick = {
                 if (captureMode == CameraState.CAPTURE_MODE_PHOTO) {
                     showFlash = true

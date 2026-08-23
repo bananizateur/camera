@@ -23,6 +23,8 @@ import androidx.compose.material.icons.filled.CameraRear
 import androidx.compose.material.icons.filled.FlashAuto
 import androidx.compose.material.icons.filled.FlashOff
 import androidx.compose.material.icons.filled.FlashOn
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -45,6 +47,8 @@ import tech.jptr.camera.util.ShutterButton
 @Composable
 fun ControlsOverlay(
     viewModel: CameraViewModel,
+    isExpanded: Boolean,
+    onToggleExpand: () -> Unit,
     onCaptureClick: () -> Unit,
     onSwitchClick: () -> Unit,
     onThumbnailClick: () -> Unit,
@@ -62,25 +66,7 @@ fun ControlsOverlay(
     val extensionMode = cameraState.extensionMode
 
     Box(modifier = modifier.fillMaxSize()) {
-        // Extension mode indicator — top right corner
-        if (extensionMode != CameraState.EXTENSION_NONE) {
-            Text(
-                text = when (extensionMode) {
-                    CameraState.EXTENSION_HDR -> "HDR"
-                    CameraState.EXTENSION_NIGHT -> "\uD83C\uDF19" // Moon emoji
-                    CameraState.EXTENSION_AUTO -> "A"
-                    else -> ""
-                },
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(end = 16.dp, top = 56.dp),
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Medium,
-                color = Color.White.copy(alpha = 0.7f)
-            )
-        }
-
-        // Top row
+        // Top row — flash | expand/collapse | extension status
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -88,6 +74,7 @@ fun ControlsOverlay(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // Left: flash button
             if (captureMode == CameraState.CAPTURE_MODE_PHOTO && !isRecording) {
                 IconButton(
                     icon = getFlashIcon(flashMode),
@@ -99,13 +86,36 @@ fun ControlsOverlay(
                 Spacer(modifier = Modifier.size(48.dp))
             }
 
-            if (zoomRatio > 1.0f) {
+            // Center: expand/collapse
+            IconButton(
+                icon = if (isExpanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
+                contentDescription = if (isExpanded) "Fit to screen" else "Fill screen",
+                onClick = onToggleExpand,
+                size = 48.dp
+            )
+
+            // Right: extension status or zoom
+            if (extensionMode != CameraState.EXTENSION_NONE) {
+                Text(
+                    text = when (extensionMode) {
+                        CameraState.EXTENSION_HDR -> "HDR"
+                        CameraState.EXTENSION_NIGHT -> "\uD83C\uDF19"
+                        CameraState.EXTENSION_AUTO -> "A"
+                        else -> ""
+                    },
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = Color.White.copy(alpha = 0.7f)
+                )
+            } else if (zoomRatio > 1.0f) {
                 Text(
                     text = "%.1fx".format(zoomRatio),
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f)
                 )
+            } else {
+                Spacer(modifier = Modifier.size(48.dp))
             }
         }
 
