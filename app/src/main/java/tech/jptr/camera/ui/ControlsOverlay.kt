@@ -59,8 +59,27 @@ fun ControlsOverlay(
     val captureMode = cameraState.captureMode
     val isRecording = cameraState.isRecording
     val recordingDurationMs = cameraState.recordingDurationMs
+    val extensionMode = cameraState.extensionMode
 
     Box(modifier = modifier.fillMaxSize()) {
+        // Extension mode indicator — top right corner
+        if (extensionMode != CameraState.EXTENSION_NONE) {
+            Text(
+                text = when (extensionMode) {
+                    CameraState.EXTENSION_HDR -> "HDR"
+                    CameraState.EXTENSION_NIGHT -> "\uD83C\uDF19" // Moon emoji
+                    CameraState.EXTENSION_AUTO -> "A"
+                    else -> ""
+                },
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(end = 16.dp, top = 56.dp),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium,
+                color = Color.White.copy(alpha = 0.7f)
+            )
+        }
+
         // Top row
         Row(
             modifier = Modifier
@@ -86,21 +105,6 @@ fun ControlsOverlay(
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f)
-                )
-            }
-        }
-
-        // Recording timer — centered vertically
-        if (isRecording) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = formatDuration(recordingDurationMs),
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = Color.Red
                 )
             }
         }
@@ -135,6 +139,17 @@ fun ControlsOverlay(
                             onClick = { viewModel.setCaptureMode(CameraState.CAPTURE_MODE_VIDEO) }
                         )
                     }
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+
+                // Recording timer — above shutter button
+                if (isRecording) {
+                    Text(
+                        text = formatDuration(recordingDurationMs),
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color.Red
+                    )
                     Spacer(modifier = Modifier.height(16.dp))
                 }
 

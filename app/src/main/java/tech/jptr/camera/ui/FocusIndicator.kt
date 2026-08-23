@@ -76,13 +76,8 @@ fun FocusIndicator(
                     )
                     .drawBehind {
                         drawCircle(
-                            color = indicatorColor.copy(alpha = 0.3f),
-                            radius = 35.dp.toPx(),
-                            style = Stroke(width = 3.dp.toPx())
-                        )
-                        drawCircle(
                             color = indicatorColor,
-                            radius = 8.dp.toPx(),
+                            radius = 35.dp.toPx(),
                             style = Stroke(width = 2.dp.toPx())
                         )
                     }

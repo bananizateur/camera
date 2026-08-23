@@ -6,10 +6,13 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.provider.MediaStore
+import android.view.MotionEvent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.camera.core.FocusMeteringAction
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
+import androidx.camera.core.MeteringPointFactory
 import androidx.camera.video.MediaStoreOutputOptions
 import androidx.camera.video.Recording
 import androidx.camera.video.VideoRecordEvent
@@ -18,6 +21,8 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -35,9 +40,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.Dispatchers
@@ -47,6 +52,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import tech.jptr.camera.camera.CameraState
 import tech.jptr.camera.camera.CameraViewModel
+import tech.jptr.camera.camera.JpcExtensionManager
 import tech.jptr.camera.camera.PhotoSaver
 import tech.jptr.camera.camera.UseCases
 import java.text.SimpleDateFormat
@@ -113,6 +119,8 @@ fun CameraScreen(viewModel: CameraViewModel) {
     val captureMode = cameraState.captureMode
     val isRecording = cameraState.isRecording
 
+    var extensionManager by remember { mutableStateOf<JpcExtensionManager?>(null) }
+
     val cameraSelector = remember(facing) { UseCases.createCameraSelector(facing) }
     val preview = remember { UseCases.createPreview(targetRotation = 0) }
     val imageCapture = remember { UseCases.createImageCapture(targetRotation = 0) }
@@ -128,13 +136,39 @@ fun CameraScreen(viewModel: CameraViewModel) {
         if (hasCameraPermission) {
             cameraController.unbindAll()
             try {
+                // Initialize extension manager on first bind
+                if (extensionManager == null) {
+                    val cameraProvider = cameraController.getCameraProvider()
+                    if (cameraProvider != null) {
+                        val mgr = JpcExtensionManager.create(context, cameraProvider)
+                        extensionManager = mgr
+                        val available = mgr.getAvailableExtensionModes()
+                        viewModel.setAvailableExtensions(available)
+                        val bestExtension = mgr.selectBestExtension()
+                        viewModel.setExtensionMode(bestExtension)
+                    }
+                }
+
+                // Use extension-enabled selector if an extension is active
+                val currentExtension = viewModel.state.extensionMode
+                val effectiveSelector = if (currentExtension != CameraState.EXTENSION_NONE && extensionManager != null) {
+                    extensionManager!!.getExtensionEnabledSelector(cameraSelector, currentExtension)
+                } else {
+                    cameraSelector
+                }
+
                 cameraController.bindToLifecycle(
                     lifecycleOwner = lifecycleOwner,
-                    cameraSelector = cameraSelector,
+                    cameraSelector = effectiveSelector,
                     previewUseCase = preview,
                     imageCaptureUseCase = imageCapture,
                     videoCaptureUseCase = videoCapture
                 )
+
+                // Set camera control and info on ViewModel for zoom/focus
+                val camera = cameraController.getCamera()
+                viewModel.setCameraControl(camera?.cameraControl)
+                viewModel.setCameraInfo(camera?.cameraInfo)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -185,6 +219,23 @@ fun CameraScreen(viewModel: CameraViewModel) {
                 } else if (dragAmount.x > 50) {
                     viewModel.setCaptureMode(CameraState.CAPTURE_MODE_PHOTO)
                 }
+            }
+        }
+        .pointerInput(Unit) {
+            detectTapGestures { offset ->
+                // Tap to focus
+                val factory: MeteringPointFactory = previewView.meteringPointFactory
+                val point = factory.createPoint(offset.x, offset.y)
+                val action = FocusMeteringAction.Builder(point).build()
+                viewModel.cameraControl?.startFocusAndMetering(action)
+                viewModel.onTapFocus(offset, 0)
+            }
+        }
+        .pointerInput(Unit) {
+            detectTransformGestures { _, _, zoom, _ ->
+                val current = viewModel.state.zoomRatio
+                val newRatio = current * zoom
+                viewModel.updateZoom(newRatio)
             }
         }
     ) {

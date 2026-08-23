@@ -30,7 +30,8 @@ object UseCases {
         return ImageCapture.Builder()
             .setTargetAspectRatio(targetAspectRatio)
             .setTargetRotation(targetRotation)
-            .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
+            .setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)
+            .setJpegQuality(90)
             .setFlashMode(flashMode)
             .build()
     }

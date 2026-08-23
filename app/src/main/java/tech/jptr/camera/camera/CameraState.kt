@@ -27,10 +27,17 @@ data class CameraState(
     val captureMode: Int = CAPTURE_MODE_PHOTO,
     val isRecording: Boolean = false,
     val recordingDurationMs: Long = 0L,
+    val extensionMode: Int = EXTENSION_NONE,
+    val availableExtensions: List<Int> = emptyList(),
 ) {
     companion object {
         const val CAPTURE_MODE_PHOTO = 0
         const val CAPTURE_MODE_VIDEO = 1
+
+        const val EXTENSION_NONE = 0
+        const val EXTENSION_AUTO = 1
+        const val EXTENSION_HDR = 2
+        const val EXTENSION_NIGHT = 3
     }
 }
 
@@ -115,6 +122,14 @@ class CameraViewModel : androidx.lifecycle.ViewModel() {
 
     fun setRecordingDuration(durationMs: Long) {
         state = state.copy(recordingDurationMs = durationMs)
+    }
+
+    fun setExtensionMode(mode: Int) {
+        state = state.copy(extensionMode = mode)
+    }
+
+    fun setAvailableExtensions(extensions: List<Int>) {
+        state = state.copy(availableExtensions = extensions)
     }
 
     val maxZoomRatio: Float
