@@ -1,6 +1,5 @@
 package tech.jptr.camera.ui
 
-import android.graphics.Bitmap
 import androidx.camera.core.ImageCapture
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -13,6 +12,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -37,6 +37,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import tech.jptr.camera.camera.CameraState
 import tech.jptr.camera.camera.CameraViewModel
 import tech.jptr.camera.util.IconButton
 import tech.jptr.camera.util.ShutterButton
@@ -55,83 +56,175 @@ fun ControlsOverlay(
     val flashMode = cameraState.flashMode
     val isCaptureInProgress = cameraState.isCaptureInProgress
     val lastThumbnail = cameraState.lastThumbnail
+    val captureMode = cameraState.captureMode
+    val isRecording = cameraState.isRecording
+    val recordingDurationMs = cameraState.recordingDurationMs
 
     Box(modifier = modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally
+        // Top row
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Spacer(modifier = Modifier.padding(16.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
+            if (captureMode == CameraState.CAPTURE_MODE_PHOTO && !isRecording) {
                 IconButton(
                     icon = getFlashIcon(flashMode),
                     contentDescription = "Flash mode",
                     onClick = { viewModel.cycleFlashMode() },
                     size = 48.dp
                 )
-
-                if (zoomRatio > 1.0f) {
-                    Text(
-                        text = "%.1fx".format(zoomRatio),
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),
-                        modifier = Modifier.padding(16.dp)
-                    )
-                }
+            } else {
+                Spacer(modifier = Modifier.size(48.dp))
             }
 
-            Spacer(modifier = Modifier.weight(1f))
+            if (zoomRatio > 1.0f) {
+                Text(
+                    text = "%.1fx".format(zoomRatio),
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f)
+                )
+            }
+        }
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(32.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+        // Recording timer — centered vertically
+        if (isRecording) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
             ) {
-                IconButton(
-                    icon = getSwitchCameraIcon(facing),
-                    contentDescription = "Switch camera",
-                    onClick = onSwitchClick,
-                    size = 56.dp
+                Text(
+                    text = formatDuration(recordingDurationMs),
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = Color.Red
                 )
+            }
+        }
 
-                ShutterButton(
-                    onClick = onCaptureClick,
-                    isLoading = isCaptureInProgress,
-                    size = 72.dp,
-                    innerSize = 56.dp,
-                    enabled = !isCaptureInProgress
-                )
-
-                if (lastThumbnail != null) {
-                    Box(
+        // Bottom section — Column stacking
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 32.dp),
+            contentAlignment = Alignment.BottomCenter
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                // Mode tabs with swipe gesture (hidden during recording)
+                if (!isRecording) {
+                    Row(
                         modifier = Modifier
-                            .size(56.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .border(2.dp, Color.White, RoundedCornerShape(8.dp))
-                            .clickable { onThumbnailClick() }
+                            .fillMaxWidth()
+                            .height(40.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Image(
-                            bitmap = lastThumbnail.asImageBitmap(),
-                            contentDescription = "Last photo",
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop
+                        ModeTab(
+                            label = "PHOTO",
+                            isSelected = captureMode == CameraState.CAPTURE_MODE_PHOTO,
+                            onClick = { viewModel.setCaptureMode(CameraState.CAPTURE_MODE_PHOTO) }
+                        )
+                        Spacer(modifier = Modifier.size(12.dp))
+                        ModeTab(
+                            label = "VIDEO",
+                            isSelected = captureMode == CameraState.CAPTURE_MODE_VIDEO,
+                            onClick = { viewModel.setCaptureMode(CameraState.CAPTURE_MODE_VIDEO) }
                         )
                     }
-                } else {
-                    Box(modifier = Modifier.size(56.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+
+                // Bottom row: switch | shutter | thumbnail
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 32.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Left: switch camera (hidden during recording)
+                    if (!isRecording) {
+                        IconButton(
+                            icon = getSwitchCameraIcon(facing),
+                            contentDescription = "Switch camera",
+                            onClick = onSwitchClick,
+                            size = 56.dp
+                        )
+                    } else {
+                        Spacer(modifier = Modifier.size(56.dp))
+                    }
+
+                    // Center: shutter button
+                    ShutterButton(
+                        onClick = onCaptureClick,
+                        isLoading = isCaptureInProgress,
+                        isVideoMode = captureMode == CameraState.CAPTURE_MODE_VIDEO,
+                        isRecording = isRecording,
+                        size = 72.dp,
+                        innerSize = 56.dp,
+                        enabled = !isCaptureInProgress || isRecording
+                    )
+
+                    // Right: thumbnail
+                    if (lastThumbnail != null) {
+                        Box(
+                            modifier = Modifier
+                                .size(56.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .border(2.dp, Color.White, RoundedCornerShape(8.dp))
+                                .clickable { onThumbnailClick() }
+                        ) {
+                            Image(
+                                bitmap = lastThumbnail.asImageBitmap(),
+                                contentDescription = "Last photo",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
+                    } else {
+                        Spacer(modifier = Modifier.size(56.dp))
+                    }
                 }
             }
-
-            Spacer(modifier = Modifier.padding(48.dp))
         }
     }
+}
+
+@Composable
+private fun ModeTab(
+    label: String,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .background(
+                color = if (isSelected) Color.White else Color.Transparent,
+                shape = RoundedCornerShape(20.dp)
+            )
+            .clip(RoundedCornerShape(20.dp))
+            .clickable { onClick() }
+            .padding(horizontal = 20.dp, vertical = 8.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = label,
+            fontSize = 14.sp,
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+            color = if (isSelected) Color.Black else Color.White.copy(alpha = 0.7f)
+        )
+    }
+}
+
+private fun formatDuration(durationMs: Long): String {
+    val totalSeconds = durationMs / 1000
+    val minutes = totalSeconds / 60
+    val seconds = totalSeconds % 60
+    return "%02d:%02d".format(minutes, seconds)
 }
 
 private fun getFlashIcon(flashMode: Int): ImageVector {

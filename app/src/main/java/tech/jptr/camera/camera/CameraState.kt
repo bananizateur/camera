@@ -24,7 +24,15 @@ data class CameraState(
     val exposureCompensationIndex: Int = 0,
     val exposureCompensationRange: android.util.Range<Int>? = null,
     val lastThumbnail: Bitmap? = null,
-)
+    val captureMode: Int = CAPTURE_MODE_PHOTO,
+    val isRecording: Boolean = false,
+    val recordingDurationMs: Long = 0L,
+) {
+    companion object {
+        const val CAPTURE_MODE_PHOTO = 0
+        const val CAPTURE_MODE_VIDEO = 1
+    }
+}
 
 class CameraViewModel : androidx.lifecycle.ViewModel() {
 
@@ -95,6 +103,18 @@ class CameraViewModel : androidx.lifecycle.ViewModel() {
         }
         state = state.copy(exposureCompensationIndex = clamped)
         cameraControl?.setExposureCompensationIndex(clamped)
+    }
+
+    fun setCaptureMode(mode: Int) {
+        state = state.copy(captureMode = mode)
+    }
+
+    fun setRecording(recording: Boolean) {
+        state = state.copy(isRecording = recording, recordingDurationMs = 0L)
+    }
+
+    fun setRecordingDuration(durationMs: Long) {
+        state = state.copy(recordingDurationMs = durationMs)
     }
 
     val maxZoomRatio: Float

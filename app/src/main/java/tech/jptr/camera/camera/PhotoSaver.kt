@@ -5,6 +5,7 @@ import android.content.ContentUris
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
@@ -84,6 +85,31 @@ class PhotoSaver(private val context: Context) {
         return null
     }
 
+    fun getLastMediaUri(): Uri? {
+        val projection = arrayOf(MediaStore.Files.FileColumns._ID)
+        val selection = "${MediaStore.Files.FileColumns.RELATIVE_PATH} LIKE ? AND " +
+            "${MediaStore.Files.FileColumns.MEDIA_TYPE} IN (?, ?)"
+        val selectionArgs = arrayOf(
+            "${Environment.DIRECTORY_PICTURES}/JCam/%",
+            MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE.toString(),
+            MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO.toString()
+        )
+        val sortOrder = "${MediaStore.Files.FileColumns.DATE_ADDED} DESC"
+
+        context.contentResolver.query(
+            MediaStore.Files.getContentUri("external"),
+            projection, selection, selectionArgs, sortOrder
+        )?.use { cursor ->
+            if (cursor.moveToFirst()) {
+                val id = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns._ID))
+                return ContentUris.withAppendedId(
+                    MediaStore.Files.getContentUri("external"), id
+                )
+            }
+        }
+        return null
+    }
+
     fun getLastImageThumbnail(maxSize: Int = 128): Bitmap? {
         val uri = getLastImageUri() ?: return null
         return try {
@@ -114,5 +140,78 @@ class PhotoSaver(private val context: Context) {
             }
         }
         return inSampleSize
+    }
+
+    fun getLastMediaThumbnail(maxSize: Int = 128): Bitmap? {
+        val projection = arrayOf(
+            MediaStore.Files.FileColumns._ID,
+            MediaStore.Files.FileColumns.MEDIA_TYPE,
+            MediaStore.Files.FileColumns.MIME_TYPE
+        )
+        val selection = "${MediaStore.Files.FileColumns.RELATIVE_PATH} LIKE ? AND " +
+            "${MediaStore.Files.FileColumns.MEDIA_TYPE} IN (?, ?)"
+        val selectionArgs = arrayOf(
+            "${Environment.DIRECTORY_PICTURES}/JCam/%",
+            MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE.toString(),
+            MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO.toString()
+        )
+        val sortOrder = "${MediaStore.Files.FileColumns.DATE_ADDED} DESC"
+
+        context.contentResolver.query(
+            MediaStore.Files.getContentUri("external"),
+            projection, selection, selectionArgs, sortOrder
+        )?.use { cursor ->
+            if (cursor.moveToFirst()) {
+                val id = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns._ID))
+                val mediaType = cursor.getInt(cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns.MEDIA_TYPE))
+
+                val uri = ContentUris.withAppendedId(
+                    MediaStore.Files.getContentUri("external"), id
+                )
+
+                return if (mediaType == MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO) {
+                    getVideoThumbnail(uri, maxSize)
+                } else {
+                    getImageThumbnail(uri, maxSize)
+                }
+            }
+        }
+        return null
+    }
+
+    private fun getImageThumbnail(uri: Uri, maxSize: Int): Bitmap? {
+        return try {
+            context.contentResolver.openInputStream(uri)?.use { stream ->
+                val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                BitmapFactory.decodeStream(stream, null, options)
+
+                val sampleSize = calculateInSampleSize(options, maxSize, maxSize)
+                val decodeOptions = BitmapFactory.Options().apply { inSampleSize = sampleSize }
+
+                context.contentResolver.openInputStream(uri)?.use { stream2 ->
+                    BitmapFactory.decodeStream(stream2, null, decodeOptions)
+                }
+            }
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    private fun getVideoThumbnail(uri: Uri, maxSize: Int): Bitmap? {
+        var retriever: MediaMetadataRetriever? = null
+        return try {
+            retriever = MediaMetadataRetriever()
+            retriever.setDataSource(context, uri)
+            val frame = retriever.getFrameAtTime(0) ?: return null
+
+            val width = frame.width
+            val height = frame.height
+            val scale = maxOf(1, maxOf(width / maxSize, height / maxSize))
+            Bitmap.createScaledBitmap(frame, width / scale, height / scale, true)
+        } catch (e: Exception) {
+            null
+        } finally {
+            try { retriever?.release() } catch (_: Exception) {}
+        }
     }
 }
