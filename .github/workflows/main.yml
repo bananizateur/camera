@@ -1,5 +1,1 @@
-# Debug build
 ./gradlew assembleDebug
-
-# Install on connected device
-./gradlew installDebug
